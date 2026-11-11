@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -88,6 +88,8 @@ body {
   border: 1.5px solid currentColor; border-radius: 999px; padding: 8px 14px; cursor: pointer;
 }
 .lang-btn .ar-text { font-size: 15px; }
+.band-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.lang-btn svg { width: 15px; height: 15px; flex: none; }
 .lang-btn:hover { background: rgba(255,255,255,0.08); }
 .stripe { display: flex; height: 6px; }
 .stripe span { flex: 1; }
@@ -207,7 +209,10 @@ select {
     </div>
     <div class="band-side">
       <p class="tagline" data-i18n="tagline">How packed is your Cairo Metro platform right now? Pick a line, a station and a time to see the estimate and the quietest time to leave.</p>
-      <button type="button" class="lang-btn" id="lang-btn"></button>
+      <div class="band-actions">
+        <button type="button" class="lang-btn" id="theme-btn"></button>
+        <button type="button" class="lang-btn" id="lang-btn"></button>
+      </div>
     </div>
   </div>
   <div class="stripe" aria-hidden="true"><span style="background:var(--l1)"></span><span style="background:var(--l2)"></span><span style="background:var(--l3)"></span></div>
@@ -469,7 +474,7 @@ select {
   }
 
   // State
-  const state = { line: 2, station: 7, day: 3, slot: 17, ramadan: false, lang: "en" };
+  const state = { line: 2, station: 7, day: 3, slot: 17, ramadan: false, lang: "en", theme: "light" };
   const slotToHour = s => s / 2;       // slot 10 = 05:00, slot 47 = 23:30
   const fmt = s => String(Math.floor(s / 2)).padStart(2, "0") + ":" + (s % 2 ? "30" : "00");
 
@@ -509,6 +514,10 @@ select {
     try { history.replaceState(null, "", "#" + state.lang); } catch (e) { location.hash = state.lang; }
     render();
   });
+  $("theme-btn").addEventListener("click", () => {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    render();
+  });
   window.addEventListener("hashchange", () => { const l = hashLang(); if (l && l !== state.lang) { state.lang = l; render(); } });
 
   function applyLanguage(t) {
@@ -526,6 +535,12 @@ select {
     const lb = $("lang-btn");
     lb.innerHTML = `<span class="${state.lang === "ar" ? "latin" : "ar-text"}" lang="${t.switchLang}">${t.switchTo}</span>`;
     lb.setAttribute("aria-label", state.lang === "ar" ? "Switch to English" : "التبديل إلى العربية");
+    root.dataset.theme = state.theme === "dark" ? "dark" : "light";
+    const dark = state.theme === "dark";
+    const moon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="currentColor"></path></svg>';
+    const sun = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"></circle><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>';
+    const themeLabel = state.lang === "ar" ? (dark ? "الوضع الفاتح" : "الوضع الداكن") : (dark ? "Light mode" : "Dark mode");
+    $("theme-btn").innerHTML = (dark ? sun : moon) + `<span>${themeLabel}</span>`;
     $("meter-title").textContent = t.meter;
     $("chart").setAttribute("aria-label", t.chartAria);
 
