@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metro Pulse</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Cairo:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a transit-signage header band, then a two-column board: readout + day curve beside the line's station rail. Stacks on phones. Mirrors fully for Arabic (dir=rtl). */
+:root {
+  --bg: #EEF1F4;
+  --surface: #FFFFFF;
+  --ink: #12202D;
+  --muted: #586777;
+  --rule: #D6DDE5;
+  --band: #12202D;
+  --band-ink: #F2F5F8;
+  --l1: #D2263C;
+  --l2: #E3A115;
+  --l3: #17946A;
+  --c0: #D5E6F1;
+  --c1: #93BCDD;
+  --c2: #4A78C2;
+  --c3: #25368F;
+  --focus: #25368F;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ar: "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1218; --surface: #141D27; --ink: #E4EAF0; --muted: #91A0B0; --rule: #253140;
+    --band: #060A0E; --band-ink: #E4EAF0;
+    --l1: #EF4458; --l2: #F2B53A; --l3: #2DB585;
+    --c0: #1F3345; --c1: #2C5A86; --c2: #5A8DE0; --c3: #B3C0FF; --focus: #9FB0FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1218; --surface: #141D27; --ink: #E4EAF0; --muted: #91A0B0; --rule: #253140;
+  --band: #060A0E; --band-ink: #E4EAF0;
+  --l1: #EF4458; --l2: #F2B53A; --l3: #2DB585;
+  --c0: #1F3345; --c1: #2C5A86; --c2: #5A8DE0; --c3: #B3C0FF; --focus: #9FB0FF;
+  color-scheme: dark;
+}
+/* Arabic: Cairo for everything, and no letter-spacing (it breaks Arabic letter joining) */
+:root[lang="ar"] { --font-display: var(--font-ar); --font-body: var(--font-ar); }
+:root[lang="ar"] body * { letter-spacing: 0 !important; text-transform: none !important; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+[lang="ar"], .ar-text { font-family: var(--font-ar); }
+.latin { font-family: "Barlow", system-ui, sans-serif; }
+
+/* Header band */
+.band { background: var(--band); color: var(--band-ink); }
+.band .wrap { padding-block: 22px 20px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.roundel {
+  width: 46px; height: 46px; border-radius: 50%; flex: none;
+  border: 5px solid var(--band-ink);
+  display: grid; place-items: center;
+  font: 700 22px/1 "Barlow Condensed", "Arial Narrow", sans-serif;
+}
+.brand h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5vw, 42px); line-height: 1.05; letter-spacing: 0.01em; text-transform: uppercase; }
+.brand .sub { font-weight: 700; font-size: 18px; opacity: 0.8; line-height: 1.2; margin-top: 4px; display: block; }
+.band-side { display: grid; gap: 12px; justify-items: end; max-width: 48ch; }
+.tagline { margin: 0; font-size: 15px; opacity: 0.85; }
+.lang-btn {
+  font: 600 14px/1 var(--font-body);
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent; color: var(--band-ink);
+  border: 1.5px solid currentColor; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+.lang-btn .ar-text { font-size: 15px; }
+.lang-btn:hover { background: rgba(255,255,255,0.08); }
+.stripe { display: flex; height: 6px; }
+.stripe span { flex: 1; }
+@media (max-width: 640px) { .band-side { justify-items: start; } }
+
+/* Controls */
+.controls { padding-block: 20px 4px; display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: end; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+:root[lang="ar"] .label { font-size: 13px; }
+.lines { display: flex; flex-wrap: wrap; gap: 6px; }
+.line-btn {
+  font: 600 15px/1 var(--font-body);
+  display: inline-flex; align-items: center; gap: 8px;
+  padding-block: 9px; padding-inline: 9px 12px; border-radius: 999px;
+  border: 1.5px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.line-btn .num {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font: 700 13px/1 "Barlow Condensed", sans-serif; color: #fff;
+}
+.line-btn[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+select { font: 500 15px var(--font-body); }
+select {
+  appearance: none; -webkit-appearance: none;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23889' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;
+  color: var(--ink); border: 1.5px solid var(--rule); border-radius: 10px;
+  padding-block: 9px; padding-inline: 12px 34px; max-width: 100%;
+}
+[dir="rtl"] select { background-position: left 12px center; }
+.time-field { flex: 1 1 260px; }
+.time-row { display: flex; align-items: center; gap: 12px; }
+.time-row input { flex: 1; min-width: 0; accent-color: var(--c2); }
+.clock { font: 700 26px/1 "Barlow Condensed", sans-serif; font-variant-numeric: tabular-nums; min-width: 4.2ch; text-align: end; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; padding-bottom: 8px; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--c2); }
+:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; }
+
+/* Board */
+.board { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; padding-block: 18px 8px; }
+@media (max-width: 820px) { .board { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; min-width: 0; }
+
+.readout { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px 22px; align-items: center; }
+.meter { width: 132px; height: 132px; direction: ltr; }
+.meter text { fill: var(--ink); font-family: "Barlow Condensed", sans-serif; }
+.station-name { margin: 0; font: 700 28px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: 0.01em; text-wrap: balance; }
+.station-alt { font-weight: 500; font-size: 17px; color: var(--muted); }
+.verdict { margin: 10px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.pill { font: 700 14px/1.1 var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 7px 11px; border-radius: 999px; }
+.verdict-text { color: var(--muted); font-size: 15px; }
+.tip { grid-column: 1 / -1; margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--bg); font-size: 15px; display: flex; gap: 6px 10px; align-items: baseline; flex-wrap: wrap; }
+.tip strong { font-weight: 600; }
+.tip button { font: 600 14px var(--font-body); color: var(--focus); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.num-ltr { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 22px 0 6px; }
+.chart-head h2, .rail-head h2, .how h2 { margin: 0; font: 700 19px/1.3 var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; }
+.chart-head span { font-size: 13px; color: var(--muted); }
+.chart-scroll { overflow-x: auto; direction: ltr; }
+#chart { display: block; width: 100%; min-width: 520px; height: auto; }
+#chart .bar { cursor: pointer; }
+#chart .axis { fill: var(--muted); font: 500 11px "Barlow", system-ui, sans-serif; }
+#chart .grid { stroke: var(--rule); stroke-width: 1; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* Station rail */
+.rail-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; margin-bottom: 10px; }
+.rail-head span { font-size: 13px; color: var(--muted); }
+.rail { list-style: none; margin: 0; padding: 0; position: relative; }
+.rail::before { content: ""; position: absolute; inset-inline-start: 11px; top: 14px; bottom: 14px; width: 6px; border-radius: 3px; background: var(--line-color, var(--ink)); }
+.stop { position: relative; }
+.stop button {
+  width: 100%; display: grid; grid-template-columns: 28px minmax(0, 1fr) 64px; align-items: center; gap: 10px;
+  background: none; border: 0; padding-block: 5px; padding-inline: 0 4px; color: var(--ink); text-align: start; cursor: pointer; border-radius: 8px;
+  font: 500 14.5px/1.3 var(--font-body);
+}
+.stop button:hover { background: var(--bg); }
+.dot { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--surface); justify-self: center; position: relative; z-index: 1; box-shadow: 0 0 0 1.5px var(--line-color); }
+.stop.hub .dot { width: 22px; height: 22px; }
+.stop[aria-current="true"] button { background: var(--bg); font-weight: 700; }
+.stop[aria-current="true"] .dot { box-shadow: 0 0 0 3px var(--ink); }
+.stop .names { min-width: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.stop .names .alt { color: var(--muted); font-size: 13px; font-weight: 500; text-align: end; }
+.mini { height: 8px; border-radius: 4px; background: var(--bg); overflow: hidden; }
+.mini i { display: block; height: 100%; border-radius: 4px; }
+.xfer { font: 700 10px/1 "Barlow Condensed", sans-serif; padding: 2px 4px; border-radius: 3px; color: #fff; margin-inline-start: 5px; vertical-align: 1px; }
+
+/* How it works */
+.how { padding-block: 12px 40px; }
+.how .panel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 32px; }
+@media (max-width: 820px) { .how .panel { grid-template-columns: minmax(0, 1fr); } }
+.how p { margin: 8px 0 0; max-width: 62ch; color: var(--muted); }
+.formula { margin: 10px 0 0; padding: 14px 16px; border-radius: 10px; background: var(--bg); font: 600 17px/1.6 var(--font-display); letter-spacing: 0.02em; overflow-x: auto; }
+.factors { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.factors li { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; font-size: 14.5px; }
+.factors b { font-weight: 600; }
+.factors span { color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); margin-top: 14px !important; }
+@media (prefers-reduced-motion: no-preference) {
+  .mini i, .bar rect { transition: width .25s ease, fill .25s ease; }
+}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <div class="brand">
+      <div class="roundel" aria-hidden="true">M</div>
+      <div>
+        <h1 id="t-title">Metro Pulse</h1>
+        <span class="sub" id="t-sub" lang="ar" dir="rtl">نبض المترو</span>
+      </div>
+    </div>
+    <div class="band-side">
+      <p class="tagline" data-i18n="tagline">How packed is your Cairo Metro platform right now? Pick a line, a station and a time to see the estimate and the quietest time to leave.</p>
+      <button type="button" class="lang-btn" id="lang-btn"></button>
+    </div>
+  </div>
+  <div class="stripe" aria-hidden="true"><span style="background:var(--l1)"></span><span style="background:var(--l2)"></span><span style="background:var(--l3)"></span></div>
+</header>
+
+<main>
+  <div class="wrap controls">
+    <div class="field">
+      <span class="label" id="line-label" data-i18n="line">Line</span>
+      <div class="lines" role="group" aria-labelledby="line-label" id="lines"></div>
+    </div>
+    <div class="field">
+      <label class="label" for="station" data-i18n="station">Station</label>
+      <select id="station"></select>
+    </div>
+    <div class="field">
+      <label class="label" for="day" data-i18n="day">Day</label>
+      <select id="day"></select>
+    </div>
+    <div class="field time-field">
+      <label class="label" for="time" data-i18n="time">Time</label>
+      <div class="time-row">
+        <input type="range" id="time" min="10" max="47" step="1" value="17">
+        <output class="clock" id="clock" for="time">08:30</output>
+      </div>
+    </div>
+    <label class="toggle" for="ramadan"><input type="checkbox" id="ramadan"> <span data-i18n="ramadan">Ramadan hours</span></label>
+  </div>
+
+  <div class="wrap board">
+    <section class="panel" aria-labelledby="station-name">
+      <div class="readout">
+        <svg class="meter" viewBox="0 0 132 132" role="img" aria-labelledby="meter-title">
+          <title id="meter-title">Crowd score</title>
+          <circle cx="66" cy="66" r="54" fill="none" stroke="var(--bg)" stroke-width="14"></circle>
+          <circle id="meter-arc" cx="66" cy="66" r="54" fill="none" stroke="var(--c2)" stroke-width="14" stroke-linecap="round" transform="rotate(-90 66 66)" stroke-dasharray="0 400"></circle>
+          <text id="meter-num" x="66" y="74" text-anchor="middle" font-size="40" font-weight="700">0</text>
+          <text x="66" y="94" text-anchor="middle" font-size="12" font-weight="600" fill="var(--muted)" letter-spacing="1">/ 100</text>
+        </svg>
+        <div style="min-width:0">
+          <h2 class="station-name" id="station-name">Sadat</h2>
+          <span class="station-alt" id="station-alt"></span>
+          <p class="verdict"><span class="pill" id="pill">Busy</span><span class="verdict-text" id="verdict-text"></span></p>
+        </div>
+        <p class="tip" id="tip"></p>
+      </div>
+
+      <div class="chart-head">
+        <h2 data-i18n="chartTitle">The day at this station</h2>
+        <span data-i18n="chartSub">Every half hour, 05:00 to 23:30. Tap a bar to jump there.</span>
+      </div>
+      <div class="chart-scroll">
+        <svg id="chart" viewBox="0 0 640 230" role="img" aria-label="Crowd score through the day"></svg>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <aside class="panel" aria-labelledby="rail-title">
+      <div class="rail-head">
+        <h2 id="rail-title">Line 2</h2>
+        <span id="rail-sub"></span>
+      </div>
+      <ol class="rail" id="rail"></ol>
+    </aside>
+  </div>
+
+  <section class="wrap how" aria-labelledby="how-title">
+    <div class="panel">
+      <div>
+        <h2 id="how-title" data-i18n="howTitle">How the estimate works</h2>
+        <p data-i18n="howBody">There is no public live feed of Cairo Metro ridership, so this prototype builds the estimate from patterns people already know: the morning and afternoon rush, the Egyptian weekend on Friday and Saturday, interchanges that pull crowds from two lines, and campuses that empty out at 3 PM.</p>
+        <div class="formula" data-i18n="formula">crowd = time-of-day curve × station pull × rush direction × line factor</div>
+        <p class="note" data-i18n="note">Prototype. Scores come from a rule-based model, not live counts. The next version would take quick "how full is it?" check-ins from riders and blend them into these curves.</p>
+      </div>
+      <ul class="factors" id="factors"></ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  // Station data: [English, Arabic, pull 0-1, centrality 0-1, tags]
+  // Pull = how many people the station draws. Centrality = how downtown it is (shifts peak from morning to afternoon).
+  const LINES = {
+    1: { color: "--l1", factor: 1.0, ends: { en: "Helwan to New El Marg", ar: "حلوان إلى المرج الجديدة" }, stations: [
+      ["Helwan", "حلوان", 0.78, 0.0, "term"],
+      ["Maadi", "المعادي", 0.62, 0.2, ""],
+      ["Dar El Salam", "دار السلام", 0.6, 0.3, ""],
+      ["Mar Girgis", "مار جرجس", 0.42, 0.5, ""],
+      ["El Malek El Saleh", "الملك الصالح", 0.5, 0.5, ""],
+      ["Sayeda Zeinab", "السيدة زينب", 0.66, 0.7, ""],
+      ["Saad Zaghloul", "سعد زغلول", 0.6, 0.85, ""],
+      ["Sadat", "السادات", 1.0, 1.0, "hub:2"],
+      ["Nasser", "جمال عبد الناصر", 0.9, 1.0, "hub:3"],
+      ["Orabi", "عرابي", 0.55, 0.9, ""],
+      ["Al-Shohadaa", "الشهداء", 0.98, 0.9, "hub:2"],
+      ["Ghamra", "غمرة", 0.58, 0.7, ""],
+      ["Demerdash", "الدمرداش", 0.62, 0.6, "uni"],
+      ["Kobri El Qobba", "كوبري القبة", 0.55, 0.45, ""],
+      ["Hammamat El Qobba", "حمامات القبة", 0.5, 0.4, ""],
+      ["Helmeyet El Zaitoun", "حلمية الزيتون", 0.56, 0.3, ""],
+      ["Ain Shams", "عين شمس", 0.72, 0.2, "uni"],
+      ["El Marg", "المرج", 0.7, 0.1, ""],
+      ["New El Marg", "المرج الجديدة", 0.68, 0.0, "term"]
+    ]},
+    2: { color: "--l2", factor: 0.97, ends: { en: "Shubra El Kheima to El Mounib", ar: "شبرا الخيمة إلى المنيب" }, stations: [
+      ["Shubra El Kheima", "شبرا الخيمة", 0.8, 0.0, "term"],
+      ["Koliet El Zeraa", "كلية الزراعة", 0.62, 0.2, ""],
+      ["Rod El Farag", "روض الفرج", 0.64, 0.45, ""],
+      ["Massara", "مسرة", 0.6, 0.6, ""],
+      ["Al-Shohadaa", "الشهداء", 0.98, 0.9, "hub:1"],
+      ["Attaba", "العتبة", 0.96, 1.0, "hub:3"],
+      ["Mohamed Naguib", "محمد نجيب", 0.6, 1.0, ""],
+      ["Sadat", "السادات", 1.0, 1.0, "hub:1"],
+      ["Opera", "الأوبرا", 0.55, 0.9, ""],
+      ["Dokki", "الدقي", 0.74, 0.75, ""],
+      ["El Bohoth", "البحوث", 0.68, 0.6, ""],
+      ["Cairo University", "جامعة القاهرة", 0.86, 0.5, "uni hub:3"],
+      ["Faisal", "فيصل", 0.76, 0.3, ""],
+      ["Giza", "الجيزة", 0.84, 0.25, ""],
+      ["Omm El Misryeen", "أم المصريين", 0.56, 0.15, ""],
+      ["Sakiat Mekki", "ساقية مكي", 0.5, 0.1, ""],
+      ["El Mounib", "المنيب", 0.82, 0.0, "term"]
+    ]},
+    3: { color: "--l3", factor: 0.82, ends: { en: "Adly Mansour to Cairo University", ar: "عدلي منصور إلى جامعة القاهرة" }, stations: [
+      ["Adly Mansour", "عدلي منصور", 0.78, 0.0, "term"],
+      ["Hesham Barakat", "هشام بركات", 0.45, 0.1, ""],
+      ["El Nozha", "النزهة", 0.48, 0.15, ""],
+      ["Alf Maskan", "ألف مسكن", 0.6, 0.2, ""],
+      ["Heliopolis", "هليوبوليس", 0.62, 0.3, ""],
+      ["Al-Ahram", "الأهرام", 0.55, 0.35, ""],
+      ["Stadium", "الاستاد", 0.6, 0.45, ""],
+      ["Fair Zone", "أرض المعارض", 0.5, 0.5, ""],
+      ["Abbassia", "العباسية", 0.74, 0.6, "uni"],
+      ["Abdou Pasha", "عبده باشا", 0.58, 0.7, "uni"],
+      ["Bab El Shaaria", "باب الشعرية", 0.6, 0.85, ""],
+      ["Attaba", "العتبة", 0.96, 1.0, "hub:2"],
+      ["Nasser", "جمال عبد الناصر", 0.9, 1.0, "hub:1"],
+      ["Maspero", "ماسبيرو", 0.6, 0.95, ""],
+      ["Safaa Hegazy", "صفاء حجازي", 0.55, 0.8, ""],
+      ["Kit Kat", "الكيت كات", 0.66, 0.65, ""],
+      ["Tawfikia", "التوفيقية", 0.52, 0.5, ""],
+      ["Boulak El Dakrour", "بولاق الدكرور", 0.66, 0.4, ""],
+      ["Cairo University", "جامعة القاهرة", 0.86, 0.5, "uni hub:2"]
+    ]}
+  };
+
+  const T = {
+    en: {
+      title: "Metro Pulse", sub: "نبض المترو", switchTo: "العربية", switchLang: "ar",
+      tagline: "How packed is your Cairo Metro platform right now? Pick a line, a station and a time to see the estimate and the quietest time to leave.",
+      line: "Line", station: "Station", day: "Day", time: "Time", ramadan: "Ramadan hours",
+      lineN: n => `Line ${n}`, changeFor: n => `Change for Line ${n}`,
+      days: { 6: "Saturday", 0: "Sunday", 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday" },
+      bands: [
+        ["Room to sit", "Plenty of space. You will likely find a seat."],
+        ["Standing room", "Seats are gone but you can stand comfortably."],
+        ["Busy", "Shoulder to shoulder. Expect a short wait to board."],
+        ["Packed", "You may let a train or two pass before you get on."]
+      ],
+      meter: "Crowd score",
+      good: (st, t) => `<strong>Good timing.</strong> This is about as quiet as ${st} gets within 90 minutes of <span class="num-ltr">${t}</span>.`,
+      leave: (t, n, earlier, a, b) => `<strong>Leave at <span class="num-ltr">${t}</span></strong> (${n} minutes ${earlier ? "earlier" : "later"}) and the score drops from ${a} to ${b}.`,
+      show: t => `Show ${t}`,
+      at: t => `at ${t}`,
+      chartTitle: "The day at this station",
+      chartSub: "Every half hour, 05:00 to 23:30. Tap a bar to jump there.",
+      chartAria: "Crowd score through the day",
+      howTitle: "How the estimate works",
+      howBody: "There is no public live feed of Cairo Metro ridership, so this prototype builds the estimate from patterns people already know: the morning and afternoon rush, the Egyptian weekend on Friday and Saturday, interchanges that pull crowds from two lines, and campuses that empty out at 3 PM.",
+      formula: "crowd = time-of-day curve × station pull × rush direction × line factor",
+      note: "Prototype. Scores come from a rule-based model, not live counts. The next version would take quick \"how full is it?\" check-ins from riders and blend them into these curves.",
+      factors: [
+        ["Time-of-day curve", "Separate shapes for Sunday to Wednesday, Thursday night, Saturday, Friday (with the midday prayer dip) and Ramadan (packed before iftar, near empty during it, busy again late)."],
+        ["Station pull", "Interchanges such as Sadat, Al-Shohadaa and Attaba score highest. Terminals with bus and microbus hubs come next, quieter residential stops last."],
+        ["Rush direction", "Outer stations peak in the morning as people head in. Downtown stations peak in the afternoon as everyone heads home."],
+        ["Campus effect", "University stations get an extra push at class start and finish on weekdays and drop on weekends."],
+        ["Line factor", "Line 1 runs the most crowded and Line 3 the least."]
+      ]
+    },
+    ar: {
+      title: "نبض المترو", sub: "Metro Pulse", switchTo: "English", switchLang: "en",
+      tagline: "ما مدى زحام رصيف مترو القاهرة الآن؟ اختر الخط والمحطة والوقت لترى التقدير وأهدأ وقت للخروج.",
+      line: "الخط", station: "المحطة", day: "اليوم", time: "الوقت", ramadan: "مواعيد رمضان",
+      lineN: n => `الخط ${n}`, changeFor: n => `تبادل مع الخط ${n}`,
+      days: { 6: "السبت", 0: "الأحد", 1: "الاثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة" },
+      bands: [
+        ["مقاعد متاحة", "المكان واسع، وغالبًا ستجد مقعدًا."],
+        ["وقوف مريح", "المقاعد ممتلئة لكن يمكنك الوقوف براحة."],
+        ["مزدحم", "كتف بكتف. توقع انتظارًا قصيرًا قبل الركوب."],
+        ["مكتظ", "قد تضطر لترك قطار أو اثنين قبل أن تركب."]
+      ],
+      meter: "درجة الزحام",
+      good: (st, t) => `<strong>توقيت جيد.</strong> هذا تقريبًا أهدأ ما تكون عليه محطة ${st} خلال ٩٠ دقيقة من الساعة <span class="num-ltr">${t}</span>.`,
+      leave: (t, n, earlier, a, b) => `<strong>اخرج الساعة <span class="num-ltr">${t}</span></strong> (${earlier ? "قبل موعدك" : "بعد موعدك"} بـ ${n} دقيقة) وتنخفض الدرجة من ${a} إلى ${b}.`,
+      show: t => `اعرض ${t}`,
+      at: t => `الساعة ${t}`,
+      chartTitle: "اليوم في هذه المحطة",
+      chartSub: "كل نصف ساعة من 05:00 إلى 23:30. اضغط على أي عمود للانتقال إليه.",
+      chartAria: "درجة الزحام على مدار اليوم",
+      howTitle: "كيف يُحسب التقدير",
+      howBody: "لا توجد بيانات مباشرة متاحة للجمهور عن ركاب مترو القاهرة، لذلك يبني هذا النموذج الأولي تقديره من أنماط يعرفها الجميع: زحمة الصباح وزحمة العصر، وعطلة الجمعة والسبت، ومحطات التبادل التي تجذب الركاب من خطين، والجامعات التي تفرغ في الثالثة عصرًا.",
+      formula: "الزحام = منحنى الوقت × جذب المحطة × اتجاه الذروة × معامل الخط",
+      note: "نموذج أولي. الدرجات ناتجة عن نموذج قائم على قواعد وليست أعدادًا مباشرة. النسخة القادمة ستجمع تقييمات سريعة من الركاب «قد إيه زحمة؟» وتدمجها في هذه المنحنيات.",
+      factors: [
+        ["منحنى الوقت", "أشكال مختلفة من الأحد إلى الأربعاء، وليلة الخميس، والسبت، والجمعة (مع هدوء وقت الصلاة)، ورمضان (زحمة شديدة قبل الإفطار، شبه فارغ وقته، ثم زحمة مرة أخرى ليلًا)."],
+        ["جذب المحطة", "محطات التبادل مثل السادات والشهداء والعتبة هي الأعلى، تليها المحطات الطرفية القريبة من مواقف الأتوبيس والميكروباص، ثم المحطات السكنية الأهدأ."],
+        ["اتجاه الذروة", "المحطات البعيدة تبلغ ذروتها صباحًا مع توجه الناس إلى وسط البلد، ومحطات وسط البلد تبلغ ذروتها عصرًا مع عودة الجميع."],
+        ["أثر الجامعات", "محطات الجامعات تزدحم أكثر عند بداية المحاضرات ونهايتها في أيام الدراسة، وتهدأ في العطلة."],
+        ["معامل الخط", "الخط الأول هو الأكثر زحامًا والخط الثالث هو الأقل."]
+      ]
+    }
+  };
+
+  const BAND_MAX = [30, 55, 78, 101];
+  const BAND_TOK = ["--c0", "--c1", "--c2", "--c3"];
+  const bandIdx = s => BAND_MAX.findIndex(m => s < m);
+
+  const g = (h, mu, sd) => Math.exp(-((h - mu) ** 2) / (2 * sd * sd));
+
+  // Time-of-day curve split into components so stations can weight them differently.
+  function curve(day, h, ramadan) {
+    const weekend = day === 5 || day === 6;
+    if (ramadan) {
+      const am = weekend ? 0.15 * g(h, 11, 1.5) : 0.62 * g(h, 9.5, 1.1);
+      const pm = (weekend ? 0.55 : 1.0) * g(h, 16.2, 1.2);
+      const eve = 0.62 * g(h, 21.8, 1.6);
+      const iftar = 1 - 0.88 * g(h, 18.1, 0.5);
+      return { base: 0.12 * iftar, am: am * iftar, pm: pm * iftar, eve: eve * iftar };
+    }
+    if (day === 5) { // Friday
+      const prayer = 1 - 0.6 * g(h, 12.6, 0.45);
+      return { base: 0.07 * prayer, am: 0.18 * g(h, 10, 1.4) * prayer, pm: 0.48 * g(h, 18.2, 2.3), eve: 0.34 * g(h, 21, 1.4) };
+    }
+    if (day === 6) { // Saturday
+      return { base: 0.11, am: 0.36 * g(h, 10.5, 1.8), pm: 0.55 * g(h, 16.8, 2.2), eve: 0.32 * g(h, 20.5, 1.5) };
+    }
+    // Sunday to Thursday
+    return {
+      base: 0.11,
+      am: 0.86 * g(h, 8.2, 0.95),
+      pm: 0.8 * g(h, 15.6, 1.5),
+      eve: 0.38 * g(h, 19.4, 1.4) + (day === 4 ? 0.3 * g(h, 21, 1.6) : 0)
+    };
+  }
+
+  function score(lineId, st, day, h, ramadan) {
+    const [, , pull, cent, tags] = st;
+    const c = curve(day, h, ramadan);
+    const weekend = day === 5 || day === 6;
+    const amF = 1.15 - 0.3 * cent;   // outer stations peak in the morning
+    const pmF = 0.88 + 0.22 * cent;  // downtown peaks heading home
+    let raw = c.base + c.am * amF + c.pm * pmF + c.eve;
+    if (/uni/.test(tags)) {
+      raw += weekend ? -0.05 : 0.22 * g(h, 8.6, 0.7) + 0.2 * g(h, 15.1, 0.8);
+    }
+    const s = 100 * LINES[lineId].factor * (0.35 + 0.65 * pull) * raw * 0.88;
+    return Math.max(2, Math.min(99, Math.round(s)));
+  }
+
+  // State
+  const state = { line: 2, station: 7, day: 3, slot: 17, ramadan: false, lang: "en" };
+  const slotToHour = s => s / 2;       // slot 10 = 05:00, slot 47 = 23:30
+  const fmt = s => String(Math.floor(s / 2)).padStart(2, "0") + ":" + (s % 2 ? "30" : "00");
+
+  try {
+    const saved = JSON.parse(localStorage.getItem("metro-pulse") || "null");
+    if (saved && LINES[saved.line]) Object.assign(state, saved);
+  } catch (e) {}
+  const hashLang = () => (location.hash === "#ar" ? "ar" : location.hash === "#en" ? "en" : null);
+  if (hashLang()) state.lang = hashLang();
+  const save = () => { try { localStorage.setItem("metro-pulse", JSON.stringify(state)); } catch (e) {} };
+
+  const $ = id => document.getElementById(id);
+  const linesEl = $("lines"), stationEl = $("station"), dayEl = $("day"), timeEl = $("time"),
+        clockEl = $("clock"), ramEl = $("ramadan");
+  const nameOf = st => (state.lang === "ar" ? st[1] : st[0]);
+  const altOf = st => (state.lang === "ar" ? st[0] : st[1]);
+
+  Object.keys(LINES).forEach(id => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "line-btn"; b.dataset.line = id;
+    b.addEventListener("click", () => {
+      const prev = LINES[state.line].stations[state.station][0];
+      state.line = +id;
+      const idx = LINES[id].stations.findIndex(s => s[0] === prev);
+      state.station = idx >= 0 ? idx : Math.floor(LINES[id].stations.length / 2);
+      render();
+    });
+    linesEl.appendChild(b);
+  });
+
+  stationEl.addEventListener("change", () => { state.station = +stationEl.value; render(); });
+  dayEl.addEventListener("change", () => { state.day = +dayEl.value; render(); });
+  timeEl.addEventListener("input", () => { state.slot = +timeEl.value; render(); });
+  ramEl.addEventListener("change", () => { state.ramadan = ramEl.checked; render(); });
+  $("lang-btn").addEventListener("click", () => {
+    state.lang = T[state.lang].switchLang;
+    try { history.replaceState(null, "", "#" + state.lang); } catch (e) { location.hash = state.lang; }
+    render();
+  });
+  window.addEventListener("hashchange", () => { const l = hashLang(); if (l && l !== state.lang) { state.lang = l; render(); } });
+
+  function applyLanguage(t) {
+    const root = document.documentElement;
+    root.lang = state.lang;
+    root.dir = state.lang === "ar" ? "rtl" : "ltr";
+    document.title = state.lang === "ar" ? "نبض المترو · Metro Pulse" : "Metro Pulse";
+    document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t[el.dataset.i18n]; });
+    $("t-title").textContent = t.title;
+    const sub = $("t-sub");
+    sub.textContent = t.sub;
+    sub.lang = state.lang === "ar" ? "en" : "ar";
+    sub.dir = state.lang === "ar" ? "ltr" : "rtl";
+    sub.className = "sub " + (state.lang === "ar" ? "latin" : "ar-text");
+    const lb = $("lang-btn");
+    lb.innerHTML = `<span class="${state.lang === "ar" ? "latin" : "ar-text"}" lang="${t.switchLang}">${t.switchTo}</span>`;
+    lb.setAttribute("aria-label", state.lang === "ar" ? "Switch to English" : "التبديل إلى العربية");
+    $("meter-title").textContent = t.meter;
+    $("chart").setAttribute("aria-label", t.chartAria);
+
+    linesEl.querySelectorAll("button").forEach(b => {
+      const id = b.dataset.line;
+      b.innerHTML = `<span class="num" style="background:var(${LINES[id].color})">${id}</span>${t.lineN(id)}`;
+      b.title = LINES[id].ends[state.lang];
+    });
+    dayEl.innerHTML = [6, 0, 1, 2, 3, 4, 5].map(d => `<option value="${d}">${t.days[d]}</option>`).join("");
+    stationEl.innerHTML = LINES[state.line].stations.map((s, i) => `<option value="${i}">${nameOf(s)}</option>`).join("");
+
+    $("legend").innerHTML = t.bands.map((b, i) =>
+      `<span><i style="background:var(${BAND_TOK[i]})"></i>${b[0]} <span class="num-ltr">(${i ? BAND_MAX[i - 1] : 0}–${i === 3 ? 100 : BAND_MAX[i] - 1})</span></span>`).join("");
+    $("factors").innerHTML = t.factors.map(f => `<li><b>${f[0]}</b><span>${f[1]}</span></li>`).join("");
+  }
+
+  function drawChart(series, sel) {
+    const W = 640, H = 230, L = 34, R = 8, Tp = 10, B = 26;
+    const cw = W - L - R, ch = H - Tp - B;
+    const n = series.length, step = cw / n, bw = step * 0.72;
+    const y = v => Tp + ch - (v / 100) * ch;
+    let out = "";
+    [30, 55, 78, 100].forEach(v => {
+      out += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"></line>`;
+      out += `<text class="axis" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    });
+    out += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" style="stroke:var(--muted)"></line>`;
+    series.forEach((v, i) => {
+      const slot = i + 10, x = L + i * step + (step - bw) / 2, isSel = slot === sel;
+      const fill = `var(${BAND_TOK[bandIdx(v)]})`;
+      out += `<g class="bar" data-slot="${slot}"><rect x="${(L + i * step).toFixed(1)}" y="${Tp}" width="${step.toFixed(1)}" height="${ch}" fill="transparent"></rect>` +
+        `<rect x="${x.toFixed(1)}" y="${y(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(0) - y(v)).toFixed(1)}" rx="2" fill="${fill}" ${isSel ? 'stroke="var(--ink)" stroke-width="2"' : ""}></rect></g>`;
+      if (slot % 4 === 2) out += `<text class="axis" x="${(L + i * step + step / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${String(slot / 2).padStart(2, "0")}:00</text>`;
+    });
+    const svg = $("chart");
+    svg.innerHTML = out;
+    svg.querySelectorAll(".bar").forEach(gEl => gEl.addEventListener("click", () => {
+      state.slot = +gEl.dataset.slot; render();
+    }));
+  }
+
+  function drawRail(line, t) {
+    const rail = $("rail");
+    rail.style.setProperty("--line-color", `var(${line.color})`);
+    const h = slotToHour(state.slot);
+    const altLang = state.lang === "ar" ? "en" : "ar";
+    rail.innerHTML = line.stations.map((s, i) => {
+      const v = score(state.line, s, state.day, h, state.ramadan);
+      const bi = bandIdx(v);
+      const hub = (s[4].match(/hub:(\d)/) || [])[1];
+      const xfer = hub ? `<span class="xfer" style="background:var(${LINES[hub].color})" title="${t.changeFor(hub)}">${hub}</span>` : "";
+      return `<li class="stop${hub ? " hub" : ""}" ${i === state.station ? 'aria-current="true"' : ""}>
+        <button type="button" data-i="${i}" aria-label="${nameOf(s)}, ${t.bands[bi][0]}, ${v} / 100">
+          <span class="dot" style="background:var(${BAND_TOK[bi]})"></span>
+          <span class="names"><span>${nameOf(s)}${xfer}</span><span class="alt ${altLang === "ar" ? "ar-text" : "latin"}" lang="${altLang}" dir="${altLang === "ar" ? "rtl" : "ltr"}">${altOf(s)}</span></span>
+          <span class="mini"><i style="width:${v}%;background:var(${BAND_TOK[bi]})"></i></span>
+        </button></li>`;
+    }).join("");
+    rail.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
+      state.station = +btn.dataset.i; render();
+    }));
+  }
+
+  function render() {
+    const t = T[state.lang];
+    applyLanguage(t);
+    const line = LINES[state.line];
+    const st = line.stations[state.station];
+    const h = slotToHour(state.slot);
+
+    linesEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.line === state.line)));
+    stationEl.value = state.station; dayEl.value = state.day; timeEl.value = state.slot; ramEl.checked = state.ramadan;
+    clockEl.textContent = fmt(state.slot);
+
+    const v = score(state.line, st, state.day, h, state.ramadan);
+    const bi = bandIdx(v);
+    $("station-name").textContent = nameOf(st);
+    const alt = $("station-alt");
+    alt.textContent = altOf(st);
+    alt.lang = state.lang === "ar" ? "en" : "ar";
+    alt.dir = state.lang === "ar" ? "ltr" : "rtl";
+    alt.className = "station-alt " + (state.lang === "ar" ? "latin" : "ar-text");
+    $("meter-num").textContent = v;
+    const C = 2 * Math.PI * 54;
+    const arc = $("meter-arc");
+    arc.setAttribute("stroke-dasharray", `${(v / 100) * C} ${C}`);
+    arc.setAttribute("stroke", `var(${BAND_TOK[bi]})`);
+    const pill = $("pill");
+    pill.textContent = t.bands[bi][0];
+    pill.style.background = `var(${BAND_TOK[bi]})`;
+    pill.style.color = bi >= 2 ? "var(--surface)" : "var(--ink)";
+    $("verdict-text").textContent = t.bands[bi][1];
+
+    // Quietest slot within 90 minutes either side
+    const series = [];
+    for (let s = 10; s <= 47; s++) series.push(score(state.line, st, state.day, s / 2, state.ramadan));
+    let best = state.slot, bestV = v;
+    for (let s = Math.max(10, state.slot - 3); s <= Math.min(47, state.slot + 3); s++) {
+      const sv = series[s - 10];
+      if (sv < bestV - 3) { best = s; bestV = sv; }
+    }
+    const tip = $("tip");
+    if (best === state.slot) {
+      tip.innerHTML = t.good(nameOf(st), fmt(state.slot));
+    } else {
+      const diff = (best - state.slot) * 30;
+      tip.innerHTML = t.leave(fmt(best), Math.abs(diff), diff < 0, v, bestV) +
+        ` <button type="button" id="jump">${t.show(`<span class="num-ltr">${fmt(best)}</span>`)}</button>`;
+      $("jump").addEventListener("click", () => { state.slot = best; render(); });
+    }
+
+    drawChart(series, state.slot);
+    $("rail-title").textContent = t.lineN(state.line);
+    $("rail-sub").innerHTML = `${line.ends[state.lang]} · ${t.at(`<span class="num-ltr">${fmt(state.slot)}</span>`)}`;
+    drawRail(line, t);
+    save();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
