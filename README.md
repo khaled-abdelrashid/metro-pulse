@@ -2,7 +2,7 @@
 
 A prototype that estimates how crowded Cairo Metro stations are, by line, day and half hour, and suggests a quieter time to leave. Works in English and Arabic (full right-to-left layout).
 
-**Live demo:** https://khaled223s.github.io/metro-pulse/ (Arabic: add `#ar` to the end)
+**Live demo:** https://khaled-abdelrashid.github.io/metro-pulse/ (Arabic: add `#ar` to the end)
 
 ## How the estimate works
 
